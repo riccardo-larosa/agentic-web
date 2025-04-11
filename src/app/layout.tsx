@@ -6,8 +6,7 @@ import "~/styles/globals.css";
 export const metadata: Metadata = {
   title: "Agentic",
   description:
-    "A community-driven AI automation framework that builds upon the incredible work of the open source community.",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+    "A community-driven AI automation framework that builds upon the incredible work of the open source community."
 };
 
 export default function RootLayout({

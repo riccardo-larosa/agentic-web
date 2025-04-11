@@ -195,6 +195,7 @@ function PlanTaskView({ task }: { task: ThinkingTask }) {
         const parsed = parse(jsonString);
         return typeof parsed === "object" ? parsed : {};
       } catch {
+        console.error("Failed to parse JSON:", jsonString);
         return {};
       }
     }
