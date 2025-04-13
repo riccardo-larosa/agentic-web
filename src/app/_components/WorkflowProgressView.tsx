@@ -181,21 +181,45 @@ function PlanTaskView({ task }: { task: ThinkingTask }) {
     title?: string;
     steps?: { title?: string; description?: string }[];
   }>(() => {
-    if (task.payload.text) {
-      let jsonString = task.payload.text.trim();
-      if (jsonString.startsWith("```")) {
-        jsonString = jsonString.split("```")[1]?.trim() || "";
-        if (jsonString.startsWith("json\n")) {
-          jsonString = jsonString.substring(5);
-        } else if (jsonString.startsWith("ts\n")) {
-          jsonString = jsonString.substring(3);
-        }
-      }
+    // Only attempt to parse if we have a complete message (task is successful)
+    if (task.state !== "success" || !task.payload.text) {
+      return {};
+    }
+    let jsonString = task.payload.text.trim();
+    
+    // Only attempt to parse if we have a complete code block
+    if (jsonString.includes("```") && jsonString.split("```").length >= 3) {
       try {
-        const parsed = parse(jsonString);
-        return typeof parsed === "object" ? parsed : {};
+        const [, codeBlock = ""] = jsonString.split("```");
+        let content = codeBlock.trim();
+        
+        // Remove language identifier if present
+        const firstLineBreak = content.indexOf('\n');
+        if (firstLineBreak !== -1) {
+          const language = content.substring(0, firstLineBreak).toLowerCase();
+          if (['json', 'ts', 'python', 'py'].includes(language)) {
+            content = content.substring(firstLineBreak + 1);
+          }
+          
+          // Handle Python syntax if needed
+          // if (language === 'python' || language === 'py') {
+          //   content = content
+          //     .replace(/'/g, '"')
+          //     .replace(/True/g, 'true')
+          //     .replace(/False/g, 'false')
+          //     .replace(/None/g, 'null');
+          // }
+          
+          try {
+            const parsed = parse(content);
+            return typeof parsed === "object" ? parsed : {};
+          } catch {
+            // Silently fail parsing - might be incomplete streaming data
+            return {};
+          }
+        }
       } catch {
-        console.error("Failed to parse JSON:", jsonString);
+        // Silently fail - might be incomplete streaming data
         return {};
       }
     }
