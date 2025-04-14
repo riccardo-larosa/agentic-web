@@ -1,6 +1,7 @@
 import { Minimize2, Maximize2 } from "lucide-react";
 import { parse } from "best-effort-json-parser";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { type Options as ReactMarkdownOptions } from "react-markdown";
 
 import { useAutoScrollToBottom } from "~/components/hooks/useAutoScrollToBottom";
 import { useOnStateChangeEffect } from "~/components/hooks/useOnStateChangeEffect";
@@ -25,6 +26,17 @@ import {
 
 import { Markdown } from "./Markdown";
 import { ToolCallView } from "./ToolCallView";
+
+// Create a custom markdown component without math processing
+function WorkflowMarkdown(props: ReactMarkdownOptions) {
+  return (
+    <Markdown
+      remarkPlugins={[]} // Remove all remark plugins
+      rehypePlugins={[]} // Remove all rehype plugins
+      {...props}
+    />
+  );
+}
 
 export function WorkflowProgressView({
   className,
@@ -181,55 +193,50 @@ function PlanTaskView({ task }: { task: ThinkingTask }) {
     title?: string;
     steps?: { title?: string; description?: string }[];
   }>(() => {
-    // Only attempt to parse if we have a complete message (task is successful)
     if (task.state !== "success" || !task.payload.text) {
       return {};
     }
+
     let jsonString = task.payload.text.trim();
     
     // Only attempt to parse if we have a complete code block
     if (jsonString.includes("```") && jsonString.split("```").length >= 3) {
       try {
-        const [, codeBlock = ""] = jsonString.split("```");
-        let content = codeBlock.trim();
+        const blocks = jsonString.split("```");
+        const codeBlock = blocks[1]?.trim() || "";
+        let content = codeBlock;
         
         // Remove language identifier if present
         const firstLineBreak = content.indexOf('\n');
         if (firstLineBreak !== -1) {
           const language = content.substring(0, firstLineBreak).toLowerCase();
-          if (['json', 'ts', 'python', 'py'].includes(language)) {
-            content = content.substring(firstLineBreak + 1);
-          }
-          
-          // Handle Python syntax if needed
-          // if (language === 'python' || language === 'py') {
-          //   content = content
-          //     .replace(/'/g, '"')
-          //     .replace(/True/g, 'true')
-          //     .replace(/False/g, 'false')
-          //     .replace(/None/g, 'null');
-          // }
-          
-          try {
-            const parsed = parse(content);
-            return typeof parsed === "object" ? parsed : {};
-          } catch {
-            // Silently fail parsing - might be incomplete streaming data
-            return {};
-          }
+          content = content.substring(firstLineBreak + 1).trim();
+        }
+
+        try {
+          const parsed = parse(content);
+          return typeof parsed === "object" ? parsed : {};
+        } catch {
+          console.log("Failed to parse content:", content);
+          return {};
         }
       } catch {
-        // Silently fail - might be incomplete streaming data
         return {};
       }
     }
     return {};
   }, [task]);
+
+  // Debug the markdown content being generated
   const reason = task.payload.reason;
-  const markdown = `## ${plan.title ?? ""}\n\n${plan.steps?.map((step) => `- **${step.title ?? ""}**\n\n${step.description ?? ""}`).join("\n\n") ?? ""}`;
+  const markdown = useMemo(() => {
+    const content = `## ${plan.title ?? ""}\n\n${plan.steps?.map((step) => `- **${step.title ?? ""}**\n\n${step.description ?? ""}`).join("\n\n") ?? ""}`;
+    console.log('Generated markdown:', content);
+    console.log('Reason content:', reason);
+    return content;
+  }, [plan, reason]);
 
   useOnStateChangeEffect(
-    // TODO: switch to thinking state
     task.state,
     {
       from: "pending",
@@ -265,15 +272,15 @@ function PlanTaskView({ task }: { task: ThinkingTask }) {
               </TooltipContent>
             </Tooltip>
             <AccordionContent>
-              <Markdown className="border-l-2 pt-2 pl-6 text-sm opacity-70">
+              <WorkflowMarkdown className="border-l-2 pt-2 pl-6 text-sm opacity-70">
                 {reason}
-              </Markdown>
+              </WorkflowMarkdown>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
       )}
       <div>
-        <Markdown className="pl-6">{markdown ?? ""}</Markdown>
+        <WorkflowMarkdown className="pl-6">{markdown}</WorkflowMarkdown>
       </div>
     </li>
   );

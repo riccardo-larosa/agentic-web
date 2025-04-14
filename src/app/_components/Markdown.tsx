@@ -27,6 +27,9 @@ export function Markdown({
   enableCopy?: boolean;
   style?: React.CSSProperties;
 }) {
+  // Add debugging to see what content is being processed
+  console.log('Markdown content:', children);
+  
   return (
     <div
       className={cn(className, "markdown flex flex-col gap-4")}
@@ -34,7 +37,12 @@ export function Markdown({
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[
+          [rehypeKatex, {
+            strict: false, // Disable strict mode temporarily to see if error persists
+            throwOnError: false // Don't throw on parsing errors
+          }]
+        ]}
         components={{
           a: ({ href, children }) => (
             <a href={href} target="_blank" rel="noopener noreferrer">
@@ -94,13 +102,15 @@ export function processKatexInMarkdown(markdown?: string | null) {
   if (!markdown) return markdown;
 
   const markdownWithKatexSyntax = markdown
-    .replace(/\\\\\[/g, "$$$$") // Replace '\\[' with '$$'
-    .replace(/\\\\\]/g, "$$$$") // Replace '\\]' with '$$'
-    .replace(/\\\\\(/g, "$$$$") // Replace '\\(' with '$$'
-    .replace(/\\\\\)/g, "$$$$") // Replace '\\)' with '$$'
-    .replace(/\\\[/g, "$$$$") // Replace '\[' with '$$'
-    .replace(/\\\]/g, "$$$$") // Replace '\]' with '$$'
-    .replace(/\\\(/g, "$$$$") // Replace '\(' with '$$'
-    .replace(/\\\)/g, "$$$$"); // Replace '\)' with '$$';
+    .replace(/\\\\\[/g, "$$\n") // Replace '\\[' with '$$\n'
+    .replace(/\\\\\]/g, "\n$$") // Replace '\\]' with '\n$$'
+    .replace(/\\\\\(/g, "$$\n") // Replace '\\(' with '$$\n'
+    .replace(/\\\\\)/g, "\n$$") // Replace '\\)' with '\n$$'
+    .replace(/\\\[/g, "$$\n") // Replace '\[' with '$$\n'
+    .replace(/\\\]/g, "\n$$") // Replace '\]' with '\n$$'
+    .replace(/\\\(/g, "$$\n") // Replace '\(' with '$$\n'
+    .replace(/\\\)/g, "\n$$") // Replace '\)' with '\n$$'
+    .replace(/\$\$(.*?)%/g, "$$\n$1%\n$$"); // Ensure comments have newlines
+
   return markdownWithKatexSyntax;
 }
