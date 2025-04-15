@@ -77,7 +77,27 @@ export default function HomePage() {
                   👋 Hello, there!
                 </h3>
                 <div className="px-2 text-center text-base text-gray-400 md:text-lg">
-                
+                  Try one of these topics:
+                  <div className="mt-4 flex flex-col gap-3">
+                    <button
+                      onClick={() => handleSendMessage(
+                        "analyze Google stock performance in the last 4 quarters",
+                        { deepThinkingMode: true, searchBeforePlanning: true }
+                      )}
+                      className="mx-auto rounded-xl border bg-white px-6 py-3 text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+                    >
+                      📈 Analyze Google stock performance
+                    </button>
+                    <button
+                      onClick={() => handleSendMessage(
+                        "find homes for sales in Cambridge MA with at least 2 bedrooms",
+                        { deepThinkingMode: false, searchBeforePlanning: true }
+                      )}
+                      className="mx-auto rounded-xl border bg-white px-6 py-3 text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+                    >
+                      🏠 Find homes in Cambridge, MA
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

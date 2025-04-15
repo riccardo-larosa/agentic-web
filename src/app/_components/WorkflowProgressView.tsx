@@ -28,13 +28,23 @@ import { Markdown } from "./Markdown";
 import { ToolCallView } from "./ToolCallView";
 
 // Create a custom markdown component without math processing
-function WorkflowMarkdown(props: ReactMarkdownOptions) {
+function WorkflowMarkdown({
+  className,
+  children,
+  ...props
+}: ReactMarkdownOptions & {
+  className?: string;
+  children: string;
+}) {
   return (
     <Markdown
       remarkPlugins={[]} // Remove all remark plugins
       rehypePlugins={[]} // Remove all rehype plugins
+      className={className}
       {...props}
-    />
+    >
+      {children}
+    </Markdown>
   );
 }
 
